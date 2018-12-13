@@ -66,4 +66,10 @@ setup(
     install_requires=[
         'semver',
     ],
+
+    entry_points={
+        'console_scripts': [
+            'becmd = becmd.__main__:main',
+        ],
+    },
 )
