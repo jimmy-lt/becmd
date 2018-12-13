@@ -172,3 +172,5 @@ the 15th day of the month).
 
 Contributors
 ^^^^^^^^^^^^
+
+- Jimmy Thrasibule <dev@jimmy.lt>, 2018/12/13
