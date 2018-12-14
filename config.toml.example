@@ -1,0 +1,26 @@
+# becmd configuration file
+# ========================
+#
+# Hosts configuration
+# -------------------
+#
+# The configuration is a list where each section describes the connection to a
+# Beyond Security beSECURE hosts.
+#
+# A host section accepts the following keys:
+#
+# api_key (string) _Required_
+#     The authentication/authorization token required to make use of the remote
+#     host's REST API.
+#
+# host (string)
+#     IP address or host name to reach the remote host. When not given, the
+#     host's section name is used as hostname.
+#
+
+#[host_a]
+#api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+#host = "AA.BB.CC.DD"
+#
+#[AA.BB.CC.DD]
+#api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"

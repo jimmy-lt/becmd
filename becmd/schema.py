@@ -1,4 +1,4 @@
-# becmd/errors.py
+# becmd/schema.py
 # ===============
 #
 # Copying
@@ -18,11 +18,24 @@
 # You should have received a copy of the MIT License along with becmd.
 # If not, see <http://opensource.org/licenses/MIT>.
 #
+from validx import Dict, Str
 
 
-class BaseError(Exception):
-    """Base class for all exception raised by ``becmd``."""
+#: Validation schema for a host configuration.
+Host = Dict(
+    {
+        'api_key': Str(nullable=False),
+        'host': Str(pattern=r'^[0-9A-Za-z\._-]+$', nullable=False),
+    },
+)
 
+#: Validation schema for a set of host configurations.
+HostConfig = Dict(extra=(Str(nullable=False), Host))
 
-class ConfigurationValidationError(BaseError):
-    """Error raised when the configuration file does not pass validation."""
+#: Validation schema for a becmd configuration.
+Config = Dict(
+    {
+        'hosts': HostConfig,
+    },
+    optional=['hosts', ],
+)

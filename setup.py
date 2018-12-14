@@ -64,7 +64,10 @@ setup(
     ],
 
     install_requires=[
+        'pyxdg',
         'semver',
+        'toml',
+        'validx',
     ],
 
     entry_points={
