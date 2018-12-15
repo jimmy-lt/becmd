@@ -29,7 +29,13 @@ from xdg import BaseDirectory
 
 import becmd.errors
 from becmd import __version__
-from becmd.schema import Config, validate
+from becmd.schema import (
+    CONFIG_RESERVED_KEYS,
+    HOST_CONFIG_KEYS,
+    Config,
+    Host,
+    validate,
+)
 
 
 log = logging.getLogger(__name__)
@@ -64,11 +70,27 @@ def parse_args(args):
                         action='version',
                         version='%(prog)s {version}'.format(version=__version__))
 
+    parser.add_argument('-H', '--host',
+                        type=str,
+                        dest='default',
+                        metavar='HOST',
+                        help="remote host to connect to")
+
+    parser.add_argument('-K', '--api-key',
+                        type=str,
+                        dest='cmd.api_key',
+                        metavar='API_KEY',
+                        help="authorization token to the remote host's REST API")
+
     parser.add_argument('-c', '--config',
                         type=str,
                         help="path to the becmd configuration file")
 
-    return vars(parser.parse_args(args))
+    return {
+        k: v
+        for k, v in vars(parser.parse_args(args)).items()
+        if v is not None
+    }
 
 
 def read_config(name=None):
@@ -108,10 +130,13 @@ def read_config(name=None):
             log.warning("Could not read configuration file: '{}'.".format(path))
 
     cfg = {
-        'hosts': {k: v for k, v in data.items()},
+        PROG_NAME: data.get(PROG_NAME, {}),
+        'hosts': {
+            k: v for k, v in data.items() if k not in CONFIG_RESERVED_KEYS
+        },
     }
 
-    # Parse configuration.
+    # Validate configuration.
     try:
         cfg = validate(Config, cfg)
     except becmd.errors.ValidationError:
@@ -123,11 +148,83 @@ def read_config(name=None):
         log.debug("Exit: read_cfg(name={!r}) -> {!r}".format(name, cfg))
 
 
+def host_from_config(config, name=None, cmd_prefix='cmd.'):
+    """Build a host configuration data structure from given configuration.
+
+    The host configuration is built in the following order:
+
+    1. Common configuration.
+    2. Host specific configuration.
+    3. Command line statements.
+
+
+    :param config: A dictionary with the configuration passed to ``becmd``.
+    :type config: python:dict
+
+    :param name: Host name identifier to generate the configuration for. When
+                 not given, generate the configuration for the default host.
+    :type name: python:str
+
+    :param cmd_prefix: Prefix used to denote command line arguments.
+    :type cmd_prefix: python:str
+
+
+    :returns: A merged host configuration.
+    :rtype: python:dict
+
+    """
+    log.debug(
+        "Enter: host_from_config(config={!r}, name={!r}, cmd_prefix={!r})".format(
+            config, name, cmd_prefix
+        )
+    )
+
+    common = config.get(PROG_NAME, {})
+    name = name or common.get('default', '')
+
+    # Setup host configuration.
+    host = {k: v for k, v in common.items() if k in HOST_CONFIG_KEYS}
+    host.update(config.get('hosts', {}).get(name, {}))
+    host.update({
+        k.lstrip(cmd_prefix): v
+        for k, v in common.items()
+        if k.lstrip(cmd_prefix) in HOST_CONFIG_KEYS
+    })
+    host['host'] = host.get('host') or name
+
+    # Validate host configuration.
+    try:
+        host = validate(Host, host)
+    except becmd.errors.ValidationError:
+        log.error("Could not validate host: {}.".format(name))
+        raise
+    else:
+        return host
+    finally:
+        log.debug(
+            "Exit: host_from_config(config={!r}, name={!r}, cmd_prefix={!r}) -> {!r}".format(
+                config, name, cmd_prefix, host
+            )
+        )
+
+
 def main():
     """Entry point of the *becmd* program."""
     opts = parse_args(sys.argv[1:])
     try:
-        cfg = read_config(opts['config'])
+        cfg = read_config(opts.get('config'))
+    except becmd.errors.ValidationError:
+        sys.exit(1)
+
+    # Inject command line options into the configuration.
+    cfg.setdefault(PROG_NAME, {}).update(opts)
+    if not cfg[PROG_NAME].get('default'):
+        log.error("Could not find a host to connect to.")
+        sys.exit(1)
+
+    # Get host configuration.
+    try:
+        host = host_from_config(cfg)
     except becmd.errors.ValidationError:
         sys.exit(1)
 

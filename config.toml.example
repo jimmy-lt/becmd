@@ -1,11 +1,23 @@
 # becmd configuration file
 # ========================
 #
+# General configuration
+# ---------------------
+#
+# The ``becmd`` section accept general statements to configure the behavior of
+# the ``becmd`` program. Bellow are listed the list of accepted configuration
+# directives.
+#
+# default (string)
+#     Default host to which the program should connect to.
+#
+#
 # Hosts configuration
 # -------------------
 #
-# The configuration is a list where each section describes the connection to a
-# Beyond Security beSECURE hosts.
+# Other sections of the configuration file are treated as a list hosts where
+# each section describes the connection parameters to a remote Beyond Security
+# beSECURE host.
 #
 # A host section accepts the following keys:
 #
@@ -18,6 +30,9 @@
 #     host's section name is used as hostname.
 #
 
+#[becmd]
+#default = "host_a"
+#
 #[host_a]
 #api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 #host = "AA.BB.CC.DD"

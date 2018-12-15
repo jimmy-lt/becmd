@@ -29,6 +29,24 @@ import becmd.errors
 log = logging.getLogger(__name__)
 
 
+#: Set of reserved configuration keys.
+CONFIG_RESERVED_KEYS = {'becmd', 'hosts', }
+
+#: Host configuration keys.
+HOST_CONFIG_KEYS = {'api_key', 'host'}
+
+#: Regular expression excluding all reserved configuration keys.
+RESERVED_KEYS_PATTERN = r'^(?:(?!{}).+)$'.format(r'|'.join(CONFIG_RESERVED_KEYS))
+
+
+#: Validation schema for the general configuration statements.
+Program = Dict(
+    {
+        'default': Str(pattern=RESERVED_KEYS_PATTERN),
+    },
+    optional=['default', ],
+)
+
 #: Validation schema for a host configuration.
 Host = Dict(
     {
@@ -37,15 +55,24 @@ Host = Dict(
     },
 )
 
+
+#: Host validator where the command line arguments are optional.
+HostOpt = Host.clone()
+HostOpt.optional = ['api_key', 'host']
+
+
 #: Validation schema for a set of host configurations.
-HostConfig = Dict(extra=(Str(nullable=False), Host))
+HostConfig = Dict(extra=(
+    Str(pattern=RESERVED_KEYS_PATTERN, nullable=False), HostOpt
+))
 
 #: Validation schema for a becmd configuration.
 Config = Dict(
     {
+        'becmd': Program,
         'hosts': HostConfig,
     },
-    optional=['hosts', ],
+    optional=['becmd', 'hosts'],
 )
 
 
