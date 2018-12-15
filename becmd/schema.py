@@ -30,21 +30,47 @@ log = logging.getLogger(__name__)
 
 
 #: Set of reserved configuration keys.
-CONFIG_RESERVED_KEYS = {'becmd', 'hosts', }
+CONFIG_RESERVED_KEYS = {'becmd', 'hosts', 'logging'}
 
 #: Host configuration keys.
 HOST_CONFIG_KEYS = {'api_key', 'host'}
+#: Logging configuration keys.
+LOGGING_CONFIG_KEYS = {'datefmt', 'format', 'level', 'style'}
+
+#: List of logging levels.
+LOGGING_LEVELS = {'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'}
+#: Logging format styles.
+LOGGING_STYLES = {'%', '{', '$'}
+
 
 #: Regular expression excluding all reserved configuration keys.
 RESERVED_KEYS_PATTERN = r'^(?:(?!{}).+)$'.format(r'|'.join(CONFIG_RESERVED_KEYS))
 
 
+#: Validation schema for the logger configuration.
+Logging = Dict(
+    {
+        'datefmt': Str(nullable=False),
+        'format': Str(nullable=False),
+        'level': Str(options=LOGGING_LEVELS, nullable=False),
+        'style': Str(options=LOGGING_STYLES, nullable=False),
+    },
+    defaults={
+        'datefmt': '%Y-%m-%d %H:%M:%S',
+        'format': '%(levelname)s: %(message)s',
+        'level': 'ERROR',
+        'style': '%',
+    },
+    optional=['datefmt', 'format', 'level', 'style'],
+)
+
 #: Validation schema for the general configuration statements.
 Program = Dict(
     {
         'default': Str(pattern=RESERVED_KEYS_PATTERN),
+        'logging': Logging,
     },
-    optional=['default', ],
+    optional=['default', 'logging'],
 )
 
 #: Validation schema for a host configuration.

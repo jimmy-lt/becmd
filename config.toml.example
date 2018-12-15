@@ -12,6 +12,28 @@
 #     Default host to which the program should connect to.
 #
 #
+# Logging configuration
+# ^^^^^^^^^^^^^^^^^^^^^
+#
+# It is possible to change the way ``becmd`` logs messages on the console. All
+# logging configuration statements must be prefixed with ``logging.``.
+#
+# logging.datefmt (string)
+#     Date and time format string.
+#
+# logging.format (string)
+#     The overall log message format string. For all available identifiers,
+#     refer to the `Python's documentation <https://docs.python.org/3/library/logging.html#logrecord-attributes>`_.
+#
+# logging.level (string)
+#     The minimum severity level of the emitted log messages. One of: 
+#     ``CRITICAL``, ``ERROR``, ``WARNING``, ``INFO``, ``DEBUG``, ``NOTSET``.
+#
+# logging.style (string)
+#     The Python's string format style used to build the log message format
+#     string. One of: ``%``, ``{``, ``$``.
+#
+#
 # Hosts configuration
 # -------------------
 #
@@ -32,6 +54,10 @@
 
 #[becmd]
 #default = "host_a"
+#logging.datefmt = "%Y-%m-%d %H:%M:%S"
+#logging.format = "%(levelname)s: %(message)s"
+#logging.level = "INFO"
+#logging.style = "%"
 #
 #[host_a]
 #api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"

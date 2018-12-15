@@ -32,8 +32,11 @@ from becmd import __version__
 from becmd.schema import (
     CONFIG_RESERVED_KEYS,
     HOST_CONFIG_KEYS,
+    LOGGING_CONFIG_KEYS,
+    LOGGING_LEVELS,
     Config,
     Host,
+    Logging,
     validate,
 )
 
@@ -81,6 +84,13 @@ def parse_args(args):
                         dest='cmd.api_key',
                         metavar='API_KEY',
                         help="authorization token to the remote host's REST API")
+
+    parser.add_argument('-L', '--log-level',
+                        type=str,
+                        choices=LOGGING_LEVELS,
+                        dest='cmd.level',
+                        metavar='LEVEL',
+                        help="minimum severity level of the emitted log messages")
 
     parser.add_argument('-c', '--config',
                         type=str,
@@ -130,7 +140,7 @@ def read_config(name=None):
             log.warning("Could not read configuration file: '{}'.".format(path))
 
     cfg = {
-        PROG_NAME: data.get(PROG_NAME, {}),
+        PROG_NAME: data.get(PROG_NAME, {'logging': {}}),
         'hosts': {
             k: v for k, v in data.items() if k not in CONFIG_RESERVED_KEYS
         },
@@ -208,6 +218,51 @@ def host_from_config(config, name=None, cmd_prefix='cmd.'):
         )
 
 
+def logging_from_config(config, cmd_prefix='cmd.'):
+    """Setup logging from given configuration.
+
+    The configuration is built in the following order:
+
+    1. Common configuration.
+    2. Command line statements.
+
+
+    :param config: A dictionary with the configuration passed to ``becmd``.
+    :type config: python:dict
+
+    :param cmd_prefix: Prefix used to denote command line arguments.
+    :type cmd_prefix: python:str
+
+    """
+    log.debug(
+        "Enter: logging_from_config(config={!r}, cmd_prefix={!r})".format(
+            config, cmd_prefix
+        )
+    )
+
+    common = config.get(PROG_NAME, {}).get('logging', {})
+    common.update({
+        k.lstrip(cmd_prefix): v
+        for k, v in config.get(PROG_NAME, {}).items()
+        if k.lstrip(cmd_prefix) in LOGGING_CONFIG_KEYS
+    })
+
+    # Validate logging configuration.
+    try:
+        validate(Logging, common)
+    except becmd.errors.ValidationError:
+        log.warning("Could not validate logging configuration.")
+        raise
+    else:
+        logging.basicConfig(**common)
+    finally:
+        log.debug(
+            "Exit: logging_from_config(config={!r}, cmd_prefix={!r}) -> None".format(
+                config, cmd_prefix
+            )
+        )
+
+
 def main():
     """Entry point of the *becmd* program."""
     opts = parse_args(sys.argv[1:])
@@ -218,6 +273,8 @@ def main():
 
     # Inject command line options into the configuration.
     cfg.setdefault(PROG_NAME, {}).update(opts)
+    logging_from_config(cfg)
+
     if not cfg[PROG_NAME].get('default'):
         log.error("Could not find a host to connect to.")
         sys.exit(1)
