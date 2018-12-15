@@ -18,7 +18,15 @@
 # You should have received a copy of the MIT License along with becmd.
 # If not, see <http://opensource.org/licenses/MIT>.
 #
+import logging
+
+import validx.exc
 from validx import Dict, Str
+
+import becmd.errors
+
+
+log = logging.getLogger(__name__)
 
 
 #: Validation schema for a host configuration.
@@ -39,3 +47,41 @@ Config = Dict(
     },
     optional=['hosts', ],
 )
+
+
+def validate(schema, obj):
+    """Validate a given object against its validation schema.
+
+
+    :param schema: Data structure validation schema.
+    :type schema: ~validx.Validator
+
+    :param obj: The object data structure to be validated.
+    :type obj: ~typing.Any
+
+
+    :returns: The validated object data structure.
+    :rtype: ~typing.Any
+
+
+    :raises becmd.errors.ValidationError:
+        When the schema fails to validate given object.
+
+    """
+    log.debug("Enter: validate(schema={!r}, obj={!r})".format(schema, obj))
+
+    out = obj
+    try:
+        out = schema(obj)
+    except validx.exc.ValidationError as errors:
+        errors.sort()
+        for ctx, msg in validx.exc.format_error(errors):
+            log.error('{}: {}'.format(ctx, msg))
+
+        raise becmd.errors.ValidationError
+    else:
+        return out
+    finally:
+        log.debug("Exit: validate(schema={!r}, obj={!r}) -> {!r}".format(
+            schema, obj, out
+        ))

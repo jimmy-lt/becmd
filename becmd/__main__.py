@@ -25,13 +25,11 @@ import logging
 import toml
 import argparse
 
-import validx.exc
-
 from xdg import BaseDirectory
 
 import becmd.errors
 from becmd import __version__
-from becmd.schema import Config
+from becmd.schema import Config, validate
 
 
 log = logging.getLogger(__name__)
@@ -115,15 +113,10 @@ def read_config(name=None):
 
     # Parse configuration.
     try:
-        cfg = Config(cfg)
-    except validx.exc.ValidationError as errors:
-        errors.sort()
-
+        cfg = validate(Config, cfg)
+    except becmd.errors.ValidationError:
         log.error("Could not validate configuration file: '{}'.".format(path))
-        for ctx, msg in validx.exc.format_error(errors):
-            log.error('{}: {}'.format(ctx, msg))
-
-        raise becmd.errors.ConfigurationValidationError
+        raise
     else:
         return cfg
     finally:
@@ -135,7 +128,7 @@ def main():
     opts = parse_args(sys.argv[1:])
     try:
         cfg = read_config(opts['config'])
-    except becmd.errors.ConfigurationValidationError:
+    except becmd.errors.ValidationError:
         sys.exit(1)
 
 

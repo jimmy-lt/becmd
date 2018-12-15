@@ -24,5 +24,5 @@ class BaseError(Exception):
     """Base class for all exception raised by ``becmd``."""
 
 
-class ConfigurationValidationError(BaseError):
-    """Error raised when the configuration file does not pass validation."""
+class ValidationError(BaseError):
+    """Error raised when a becmd data structure could not be validated."""
