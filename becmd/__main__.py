@@ -29,14 +29,14 @@ from xdg import BaseDirectory
 
 import becmd.errors
 from becmd import __version__
+from becmd.utils import mapping_expand, mapping_update
 from becmd.schema import (
     CONFIG_RESERVED_KEYS,
     HOST_CONFIG_KEYS,
-    LOGGING_CONFIG_KEYS,
     LOGGING_LEVELS,
+    CommonLogging,
     Config,
     Host,
-    Logging,
     validate,
 )
 
@@ -75,20 +75,20 @@ def parse_args(args):
 
     parser.add_argument('-H', '--host',
                         type=str,
-                        dest='default',
+                        dest='hosts.default',
                         metavar='HOST',
                         help="remote host to connect to")
 
     parser.add_argument('-K', '--api-key',
                         type=str,
-                        dest='cmd.api_key',
+                        dest='hosts.api_key',
                         metavar='API_KEY',
                         help="authorization token to the remote host's REST API")
 
     parser.add_argument('-L', '--log-level',
                         type=str,
                         choices=LOGGING_LEVELS,
-                        dest='cmd.level',
+                        dest='logging.level',
                         metavar='LEVEL',
                         help="minimum severity level of the emitted log messages")
 
@@ -103,13 +103,16 @@ def parse_args(args):
     }
 
 
-def read_config(name=None):
+def read_config(name=None, update=None):
     """Read a ``becmd`` configuration file.
 
 
     :param name: File name to load the configuration from. When not given, try
                  to load the configuration from the default locations.
     :type name: python:str
+
+    :param update: Additional data with which to update the final configuration.
+    :type update: python:dict
 
 
     :returns: A dictionary with parsed configuration statements.
@@ -139,12 +142,15 @@ def read_config(name=None):
         except IOError:
             log.warning("Could not read configuration file: '{}'.".format(path))
 
-    cfg = {
-        PROG_NAME: data.get(PROG_NAME, {'logging': {}}),
+    cfg = {k: v for k, v in data.items() if k in CONFIG_RESERVED_KEYS}
+    cfg.update({
         'hosts': {
             k: v for k, v in data.items() if k not in CONFIG_RESERVED_KEYS
         },
-    }
+    })
+
+    if update is not None:
+        mapping_update(cfg, update)
 
     # Validate configuration.
     try:
@@ -158,14 +164,8 @@ def read_config(name=None):
         log.debug("Exit: read_cfg(name={!r}) -> {!r}".format(name, cfg))
 
 
-def host_from_config(config, name=None, cmd_prefix='cmd.'):
+def host_from_config(config, name=None, update=None):
     """Build a host configuration data structure from given configuration.
-
-    The host configuration is built in the following order:
-
-    1. Common configuration.
-    2. Host specific configuration.
-    3. Command line statements.
 
 
     :param config: A dictionary with the configuration passed to ``becmd``.
@@ -175,8 +175,8 @@ def host_from_config(config, name=None, cmd_prefix='cmd.'):
                  not given, generate the configuration for the default host.
     :type name: python:str
 
-    :param cmd_prefix: Prefix used to denote command line arguments.
-    :type cmd_prefix: python:str
+    :param update: Additional data with which to update the final configuration.
+    :type update: python:dict
 
 
     :returns: A merged host configuration.
@@ -184,22 +184,19 @@ def host_from_config(config, name=None, cmd_prefix='cmd.'):
 
     """
     log.debug(
-        "Enter: host_from_config(config={!r}, name={!r}, cmd_prefix={!r})".format(
-            config, name, cmd_prefix
+        "Enter: host_from_config(config={!r}, name={!r}, update={!r})".format(
+            config, name, update
         )
     )
 
-    common = config.get(PROG_NAME, {})
+    common = config.get(PROG_NAME, {}).get('hosts', {})
     name = name or common.get('default', '')
 
     # Setup host configuration.
     host = {k: v for k, v in common.items() if k in HOST_CONFIG_KEYS}
     host.update(config.get('hosts', {}).get(name, {}))
-    host.update({
-        k.lstrip(cmd_prefix): v
-        for k, v in common.items()
-        if k.lstrip(cmd_prefix) in HOST_CONFIG_KEYS
-    })
+    if update is not None:
+        host.update(update)
     host['host'] = host.get('host') or name
 
     # Validate host configuration.
@@ -212,44 +209,36 @@ def host_from_config(config, name=None, cmd_prefix='cmd.'):
         return host
     finally:
         log.debug(
-            "Exit: host_from_config(config={!r}, name={!r}, cmd_prefix={!r}) -> {!r}".format(
-                config, name, cmd_prefix, host
+            "Exit: host_from_config(config={!r}, name={!r}, update={!r}) -> {!r}".format(
+                config, name, update, host
             )
         )
 
 
-def logging_from_config(config, cmd_prefix='cmd.'):
+def logging_from_config(config, update=None):
     """Setup logging from given configuration.
-
-    The configuration is built in the following order:
-
-    1. Common configuration.
-    2. Command line statements.
 
 
     :param config: A dictionary with the configuration passed to ``becmd``.
     :type config: python:dict
 
-    :param cmd_prefix: Prefix used to denote command line arguments.
-    :type cmd_prefix: python:str
+    :param update: Additional data with which to update the final configuration.
+    :type update: python:dict
 
     """
     log.debug(
-        "Enter: logging_from_config(config={!r}, cmd_prefix={!r})".format(
-            config, cmd_prefix
+        "Enter: logging_from_config(config={!r}, update={!r})".format(
+            config, update
         )
     )
 
     common = config.get(PROG_NAME, {}).get('logging', {})
-    common.update({
-        k.lstrip(cmd_prefix): v
-        for k, v in config.get(PROG_NAME, {}).items()
-        if k.lstrip(cmd_prefix) in LOGGING_CONFIG_KEYS
-    })
+    if update is not None:
+        mapping_update(common, update)
 
     # Validate logging configuration.
     try:
-        validate(Logging, common)
+        validate(CommonLogging, common)
     except becmd.errors.ValidationError:
         log.warning("Could not validate logging configuration.")
         raise
@@ -257,31 +246,28 @@ def logging_from_config(config, cmd_prefix='cmd.'):
         logging.basicConfig(**common)
     finally:
         log.debug(
-            "Exit: logging_from_config(config={!r}, cmd_prefix={!r}) -> None".format(
-                config, cmd_prefix
+            "Exit: logging_from_config(config={!r}, update={!r}) -> None".format(
+                config, update
             )
         )
 
 
 def main():
     """Entry point of the *becmd* program."""
-    opts = parse_args(sys.argv[1:])
+    opts = mapping_expand(parse_args(sys.argv[1:]))
     try:
-        cfg = read_config(opts.get('config'))
+        cfg = read_config(opts.get('config'), update={PROG_NAME: opts})
     except becmd.errors.ValidationError:
         sys.exit(1)
 
-    # Inject command line options into the configuration.
-    cfg.setdefault(PROG_NAME, {}).update(opts)
-    logging_from_config(cfg)
-
-    if not cfg[PROG_NAME].get('default'):
+    logging_from_config(cfg, update=opts.get('logging'))
+    if not cfg[PROG_NAME]['hosts'].get('default'):
         log.error("Could not find a host to connect to.")
         sys.exit(1)
 
     # Get host configuration.
     try:
-        host = host_from_config(cfg)
+        host = host_from_config(cfg, update=opts.get('hosts'))
     except becmd.errors.ValidationError:
         sys.exit(1)
 

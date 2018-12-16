@@ -47,8 +47,17 @@ LOGGING_STYLES = {'%', '{', '$'}
 RESERVED_KEYS_PATTERN = r'^(?:(?!{}).+)$'.format(r'|'.join(CONFIG_RESERVED_KEYS))
 
 
-#: Validation schema for the logger configuration.
-Logging = Dict(
+#: Validation schema for the common hosts configuration.
+CommonHosts = Dict(
+    {
+        'api_key': Str(nullable=False),
+        'default': Str(pattern=RESERVED_KEYS_PATTERN),
+    },
+    optional=['api_key', 'default'],
+)
+
+#: Validation schema for the common logger configuration.
+CommonLogging = Dict(
     {
         'datefmt': Str(nullable=False),
         'format': Str(nullable=False),
@@ -64,13 +73,18 @@ Logging = Dict(
     optional=['datefmt', 'format', 'level', 'style'],
 )
 
-#: Validation schema for the general configuration statements.
-Program = Dict(
+#: Validation schema for the common configuration statements.
+Common = Dict(
     {
-        'default': Str(pattern=RESERVED_KEYS_PATTERN),
-        'logging': Logging,
+        'config': Str(nullable=False),
+        'hosts': CommonHosts,
+        'logging': CommonLogging,
     },
-    optional=['default', 'logging'],
+    defaults={
+        'hosts': CommonHosts({}),
+        'logging': CommonLogging({}),
+    },
+    optional=['config', 'hosts', 'logging'],
 )
 
 #: Validation schema for a host configuration.
@@ -79,6 +93,7 @@ Host = Dict(
         'api_key': Str(nullable=False),
         'host': Str(pattern=r'^[0-9A-Za-z\._-]+$', nullable=False),
     },
+    dispose=['default', ],
 )
 
 
@@ -88,15 +103,19 @@ HostOpt.optional = ['api_key', 'host']
 
 
 #: Validation schema for a set of host configurations.
-HostConfig = Dict(extra=(
-    Str(pattern=RESERVED_KEYS_PATTERN, nullable=False), HostOpt
-))
+ConfigHost = Dict(
+    extra=(Str(pattern=RESERVED_KEYS_PATTERN, nullable=False), HostOpt)
+)
 
 #: Validation schema for a becmd configuration.
 Config = Dict(
     {
-        'becmd': Program,
-        'hosts': HostConfig,
+        'becmd': Common,
+        'hosts': ConfigHost,
+    },
+    defaults={
+        'becmd': Common({}),
+        'hosts': ConfigHost({}),
     },
     optional=['becmd', 'hosts'],
 )

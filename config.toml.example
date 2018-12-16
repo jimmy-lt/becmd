@@ -8,12 +8,20 @@
 # the ``becmd`` program. Bellow are listed the list of accepted configuration
 # directives.
 #
-# default (string)
+#
+# Hosts directives
+# ^^^^^^^^^^^^^^^^
+#
+# hosts.api_key (string)
+#     The authentication/authorization token that will be used in case the host
+#     section does not specify one.
+#
+# hosts.default (string)
 #     Default host to which the program should connect to.
 #
 #
-# Logging configuration
-# ^^^^^^^^^^^^^^^^^^^^^
+# Logging directives
+# ^^^^^^^^^^^^^^^^^^
 #
 # It is possible to change the way ``becmd`` logs messages on the console. All
 # logging configuration statements must be prefixed with ``logging.``.
@@ -43,7 +51,7 @@
 #
 # A host section accepts the following keys:
 #
-# api_key (string) _Required_
+# api_key (string)
 #     The authentication/authorization token required to make use of the remote
 #     host's REST API.
 #
@@ -53,7 +61,8 @@
 #
 
 #[becmd]
-#default = "host_a"
+#hosts.api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+#hosts.default = "host_a"
 #logging.datefmt = "%Y-%m-%d %H:%M:%S"
 #logging.format = "%(levelname)s: %(message)s"
 #logging.level = "INFO"
