@@ -65,6 +65,8 @@ setup(
 
     install_requires=[
         'pyxdg',
+        'requests',
+        'requests-cache',
         'semver',
         'toml',
         'validx',
