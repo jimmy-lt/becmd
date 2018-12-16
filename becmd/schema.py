@@ -21,7 +21,7 @@
 import logging
 
 import validx.exc
-from validx import Dict, Str
+from validx import Bool, Dict, Str
 
 import becmd.errors
 
@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 CONFIG_RESERVED_KEYS = {'becmd', 'hosts', 'logging'}
 
 #: Host configuration keys.
-HOST_CONFIG_KEYS = {'api_key', 'host'}
+HOST_CONFIG_KEYS = {'api_key', 'host', 'use_cache'}
 #: Logging configuration keys.
 LOGGING_CONFIG_KEYS = {'datefmt', 'format', 'level', 'style'}
 
@@ -52,8 +52,12 @@ CommonHosts = Dict(
     {
         'api_key': Str(nullable=False),
         'default': Str(pattern=RESERVED_KEYS_PATTERN),
+        'use_cache': Bool(),
     },
-    optional=['api_key', 'default'],
+    defaults={
+        'use_cache': True,
+    },
+    optional=['api_key', 'default', 'use_cache'],
 )
 
 #: Validation schema for the common logger configuration.
@@ -79,12 +83,13 @@ Common = Dict(
         'config': Str(nullable=False),
         'hosts': CommonHosts,
         'logging': CommonLogging,
+        'refresh': Bool(),
     },
     defaults={
         'hosts': CommonHosts({}),
         'logging': CommonLogging({}),
     },
-    optional=['config', 'hosts', 'logging'],
+    optional=['config', 'hosts', 'logging', 'refresh'],
 )
 
 #: Validation schema for a host configuration.
@@ -92,6 +97,10 @@ Host = Dict(
     {
         'api_key': Str(nullable=False),
         'host': Str(pattern=r'^[0-9A-Za-z\._-]+$', nullable=False),
+        'use_cache': Bool(),
+    },
+    defaults={
+        'use_cache': True,
     },
     dispose=['default', ],
 )

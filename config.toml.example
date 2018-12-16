@@ -19,6 +19,9 @@
 # hosts.default (string)
 #     Default host to which the program should connect to.
 #
+# hosts.use_cache (bool)
+#     Globally control caching for all hosts.
+#
 #
 # Logging directives
 # ^^^^^^^^^^^^^^^^^^
@@ -59,10 +62,14 @@
 #     IP address or host name to reach the remote host. When not given, the
 #     host's section name is used as hostname.
 #
+# use_cache (bool)
+#     Whether or not to cache the responses returned by the remote host.
+#
 
 #[becmd]
 #hosts.api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 #hosts.default = "host_a"
+#hosts.use_cache = true
 #logging.datefmt = "%Y-%m-%d %H:%M:%S"
 #logging.format = "%(levelname)s: %(message)s"
 #logging.level = "INFO"
@@ -71,6 +78,7 @@
 #[host_a]
 #api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 #host = "AA.BB.CC.DD"
+#use_cache = true
 #
 #[AA.BB.CC.DD]
 #api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"

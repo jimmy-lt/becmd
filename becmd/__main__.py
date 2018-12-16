@@ -27,7 +27,9 @@ import argparse
 
 from xdg import BaseDirectory
 
+import becmd.net
 import becmd.errors
+
 from becmd import __version__
 from becmd.utils import mapping_expand, mapping_update
 from becmd.schema import (
@@ -91,6 +93,16 @@ def parse_args(args):
                         dest='logging.level',
                         metavar='LEVEL',
                         help="minimum severity level of the emitted log messages")
+
+    parser.add_argument('-R', '--refresh',
+                        action='store_true',
+                        default=False,
+                        help="set metadata as expired before running the command")
+
+    parser.add_argument('-X', '--no-cache',
+                        action='store_false',
+                        dest='hosts.use_cache',
+                        help="disable caching of the responses from the remote host")
 
     parser.add_argument('-c', '--config',
                         type=str,
@@ -162,6 +174,32 @@ def read_config(name=None, update=None):
         return cfg
     finally:
         log.debug("Exit: read_cfg(name={!r}) -> {!r}".format(name, cfg))
+
+
+def cache_from_config(host, clear=False):
+    """Setup caching from given host configuration.
+
+
+    :param host: A dictionary with the host configuration.
+    :type host: python:dict
+
+    :param clear: Whether to clear already cached entries or not.
+    :type clear: python:bool
+
+    """
+    log.debug("Enter: cache_from_config(host={!r}, clear={!r})".format(
+        host, clear
+    ))
+
+    if not host.get('use_cache'):
+        return
+
+    cache_d = BaseDirectory.save_cache_path(PROG_NAME)
+    becmd.net.cache_setup(os.path.join(cache_d, host['host']), clear=clear)
+
+    log.debug("Exit: cache_from_config(host={!r}, clear={!r}) -> None".format(
+        host, clear
+    ))
 
 
 def host_from_config(config, name=None, update=None):
@@ -270,6 +308,8 @@ def main():
         host = host_from_config(cfg, update=opts.get('hosts'))
     except becmd.errors.ValidationError:
         sys.exit(1)
+
+    cache_from_config(host, opts.get('refresh'))
 
 
 if __name__ == '__main__':
