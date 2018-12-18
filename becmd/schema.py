@@ -52,12 +52,16 @@ CommonHosts = Dict(
     {
         'api_key': Str(nullable=False),
         'default': Str(pattern=RESERVED_KEYS_PATTERN),
+        'insecure_tls': Bool(),
         'use_cache': Bool(),
+        'use_https': Bool(),
     },
     defaults={
+        'insecure_tls': False,
         'use_cache': True,
+        'use_https': True,
     },
-    optional=['api_key', 'default', 'use_cache'],
+    optional=['api_key', 'default', 'insecure_tls', 'use_cache', 'use_https'],
 )
 
 #: Validation schema for the common logger configuration.
@@ -97,10 +101,14 @@ Host = Dict(
     {
         'api_key': Str(nullable=False),
         'host': Str(pattern=r'^[0-9A-Za-z\._-]+$', nullable=False),
+        'insecure_tls': Bool(),
         'use_cache': Bool(),
+        'use_https': Bool(),
     },
     defaults={
+        'insecure_tls': False,
         'use_cache': True,
+        'use_https': True,
     },
     dispose=['default', ],
 )

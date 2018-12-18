@@ -108,6 +108,19 @@ def parse_args(args):
                         type=str,
                         help="path to the becmd configuration file")
 
+    # Only long options to disable security options.
+    parser.add_argument('--no-https',
+                        action='store_false',
+                        default=True,
+                        dest='hosts.use_https',
+                        help="disable usage of HTTPS to communicate with remote host")
+
+    parser.add_argument('--insecure-tls',
+                        action='store_true',
+                        default=False,
+                        dest='hosts.insecure_tls',
+                        help="proceed even for TLS connections considered insecure")
+
     return {
         k: v
         for k, v in vars(parser.parse_args(args)).items()

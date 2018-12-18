@@ -19,8 +19,14 @@
 # hosts.default (string)
 #     Default host to which the program should connect to.
 #
+# hosts.insecure_tls (bool)
+#     Globally disable TLS security checks for all remote hosts.
+#
 # hosts.use_cache (bool)
 #     Globally control caching for all hosts.
+#
+# hosts.use_https (bool)
+#     Globally set the protocol to use when communicating with the remote host.
 #
 #
 # Logging directives
@@ -62,14 +68,24 @@
 #     IP address or host name to reach the remote host. When not given, the
 #     host's section name is used as hostname.
 #
+# insecure_tls (bool)
+#     Proceed and operate even for TLS connections otherwise considered
+#     insecure.
+#
 # use_cache (bool)
 #     Whether or not to cache the responses returned by the remote host.
+#
+# use_https (bool)
+#     Whether to use the HTTPS or HTTP protocol when communicating with the
+#     remote host.
 #
 
 #[becmd]
 #hosts.api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 #hosts.default = "host_a"
+#hosts.insecure_tls = false
 #hosts.use_cache = true
+#hosts.use_https = true
 #logging.datefmt = "%Y-%m-%d %H:%M:%S"
 #logging.format = "%(levelname)s: %(message)s"
 #logging.level = "INFO"
@@ -78,7 +94,9 @@
 #[host_a]
 #api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 #host = "AA.BB.CC.DD"
+#insecure_tls = false
 #use_cache = true
+#use_https = true
 #
 #[AA.BB.CC.DD]
 #api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
