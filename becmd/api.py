@@ -18,10 +18,200 @@
 # You should have received a copy of the MIT License along with becmd.
 # If not, see <http://opensource.org/licenses/MIT>.
 #
+import urllib.parse
+
 from operator import itemgetter
+from collections.abc import MutableMapping
+
 
 #: List of interface keys to ignore while parsing.
 INTERFACE_PRIMARY_IGNORE = {'examples', 'filters'}
+
+
+class Endpoint(MutableMapping):
+    """Beyond Security beSECURE API endpoint URL generator.
+
+
+    :param host: Host for which to generate the endpoint URL for.
+    :type host: python:dict
+
+    :param primary: Name of the primary function to be called.
+    :type primary: python:str
+
+    :param secondary: Name of the secondary function to be called.
+    :type secondary: python:str
+
+    :param action: Name of the action to be applied by the function.
+    :type action: python:str
+
+    :param params: Additional parameters to pass to the action.
+    :type params: ~typing.Any
+
+    """
+    #: List of reserved query parameters.
+    _RESERVED = {'action', 'apikey', 'primary', 'secondary'}
+
+    #: Path to the JSON API endpoint.
+    PATH = '/json.cgi'
+
+
+    def __init__(self, host, primary, secondary=None, action=None, **params):
+        """Constructor for :class:`becmd.api.Endpoint`."""
+        # Host configuration dictionary.
+        self._host = host
+
+        # Name of the primary interface.
+        self._primary = primary
+        # Name of the secondary interface.
+        self._secondary = secondary
+        # Name of the action.
+        self._action = action
+        # Parameters for the action.
+        self._params = {}
+
+        # Assign parameters to the action.
+        for k, v in params.items():
+            self[k] = v
+
+
+    def __iter__(self):
+        """Iterate over the six components of the endpoint's URL structure.
+
+        The components are similar to the ones returned by
+        :func:`urllib.parse.urlparse`:
+
+        1. ``scheme``, URL scheme specifier.
+        2. ``netloc``, Network location part.
+        3. ``path``, Hierarchical path.
+        4. ``params``, Parameters for last path element.
+        5. ``query``, Query component.
+        6. ``fragment``, Fragment identifier.
+
+        """
+        # scheme
+        if self._host.get('use_https'):
+            yield 'https'
+        else:
+            yield 'http'
+
+        # netloc
+        yield self._host.get('host', '')
+        # path
+        yield self.PATH
+        # params
+        yield ''
+
+        # query
+        function = {
+            k: getattr(self, k)
+            for k in self._RESERVED
+            if getattr(self, k, None)
+        }
+
+        yield urllib.parse.urlencode({
+            'apikey': self._host['api_key'],
+            **function,
+            **self._params,
+        })
+
+        # fragment
+        yield ''
+
+
+    def __len__(self):
+        """Get the number of parameters given to the action.
+
+
+        :returns: The number of parameters given the the endpoint's action.
+        :rtype: python:int
+
+        """
+        return len(self._params)
+
+
+    def __str__(self):
+        """String representation of the endpoint.
+
+
+        :returns: The URL to the endpoint.
+        :rtype: python:str
+
+        """
+        return urllib.parse.urlunparse(self)
+
+
+    def __delitem__(self, key):
+        """Remove an action parameter from the endpoint.
+
+
+        :param key: Name of the action parameter to be removed.
+        :type key: python:str
+
+        """
+        del self._params[key]
+
+
+    def __getitem__(self, key):
+        """Get the value assigned to an action parameter.
+
+
+        :param key: Name of the action parameter to be retrieved.
+        :type key: python:str
+
+
+        :returns: The value assigned the the action parameter.
+        :rtype: ~typing.Any
+
+        """
+        return self._params[key]
+
+
+    def __setitem__(self, key, value):
+        """Add a new parameter to the action.
+
+
+        :param key: Name of the parameter to be added.
+        :type key: python:str
+
+        :param value: Value to be assigned to the action parameter.
+        :type value: ~typing.Any
+
+        """
+        if key in self._RESERVED:
+            raise KeyError("reserved parameter name")
+        self._params[key] = value
+
+
+    @property
+    def action(self):
+        """Get the name of the action assigned to the endpoint."""
+        return self._action
+
+
+    @property
+    def primary(self):
+        """Get the name of the primary interface assigned to the endpoint."""
+        return self._primary
+
+
+    @property
+    def secondary(self):
+        """Get the name of the secondary interface assigned to the endpoint."""
+        return self._secondary
+
+
+class InterfaceEndpoint(Endpoint):
+    """Beyond Security beSECURE API interface endpoint URL generator.
+
+
+    :param host: Host for which to generate the endpoint URL for.
+    :type host: python:dict
+
+    """
+
+    def __init__(self, host):
+        """Constructor for :class:`becmd.api.InterfaceEndpoint`."""
+        super().__init__(host, primary='interface')
 
 
 def argparser_from_actions(parser, definition):
@@ -39,7 +229,7 @@ def argparser_from_actions(parser, definition):
 
         """
         sub = parser.add_subparsers(title='action',
-                                    dest='action',
+                                    dest='api.action',
                                     metavar='<action>')
         # name: Name of the interface action.
         for name in sorted(definition.get('functions', [])):
@@ -53,9 +243,11 @@ def argparser_from_actions(parser, definition):
             # i_name: Name of the action's input (parameter).
             # i_desc: Description of the action's input.
             for i_name, i_desc in a_def.get('input', {}).items():
+                i_name = i_name.replace('_', '-')
                 action.add_argument(
-                    '--{}'.format(i_name.replace('_', '-')),
-                    default=i_desc.get('default')
+                    '--{}'.format(i_name),
+                    default=i_desc.get('default'),
+                    dest='api.params.{}'.format(i_name)
                 )
 
 
@@ -74,7 +266,7 @@ def argparser_from_interface(parser, interface):
 
     """
     subparser = parser.add_subparsers(title='primary',
-                                      dest='primary',
+                                      dest='api.primary',
                                       metavar='<primary>')
     # p_name: Name of the primary interface.
     # secondaries: List of secondary interface definitions.
@@ -100,7 +292,7 @@ def argparser_from_interface(parser, interface):
             continue
 
         p_sub = primary.add_subparsers(title='secondary',
-                                       dest='secondary',
+                                       dest='api.secondary',
                                        metavar='<secondary>')
         # s_name: Name of the secondary interface.
         # s_def: Definition of the secondary interface.
