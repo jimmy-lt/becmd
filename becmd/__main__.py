@@ -56,18 +56,17 @@ PROG_DESCRIPTION = (
 PROG_CONFIG_NAME = 'config.toml'
 
 
-def parse_args(args):
-    """Parse the arguments passed to the *becmd* program.
+def get_argparser():
+    """Generate a command line argument parser for the *becmd* command line
+    utility.
 
 
-    :param args: List of arguments passed to the program.
-    :type args: python:list
-
-
-    :returns: A dictionary with the parsed arguments.
-    :rtype: python:dict
+    :returns: The generated command line argument parser.
+    :rtype: ~argparse.ArgumentParser
 
     """
+    log.debug("Enter: get_argparser()")
+
     parser = argparse.ArgumentParser(prog=PROG_NAME,
                                      description=PROG_DESCRIPTION)
 
@@ -121,11 +120,50 @@ def parse_args(args):
                         dest='hosts.insecure_tls',
                         help="proceed even for TLS connections considered insecure")
 
-    return {
-        k: v
-        for k, v in vars(parser.parse_args(args)).items()
-        if v is not None
-    }
+    log.debug("Exit: get_argparser() -> {!r}".format(parser))
+    return parser
+
+
+def parse_args(parser, args, partial=False):
+    """Parse a list of arguments using a given :class:`~argparse.ArgumentParser`
+    object.
+
+
+    :param parser: The command line parser to parse the arguments with.
+    :type parser: ~argparse.ArgumentParser
+
+    :param args: List of arguments to be parsed.
+    :type args: python:list
+
+    :param partial: When ``True``, parser can parse all given arguments
+                    otherwise if ``False``, only a subset of the arguments can
+                    be parsed. Defaults to ``False``.
+    :type partial: python:bool
+
+
+    :returns: A dictionary with parsed arguments.
+    :rtype: python:dict
+
+    """
+    log.debug("Enter: parse_args(parser={!r}, args{!r}, partial={!r})".format(
+        parser, args, partial
+    ))
+
+    if partial:
+        namespace = parser.parse_known_args(args)[0]
+    else:
+        namespace = parser.parse_args(args)
+
+    opts = mapping_expand({
+        k: v for k, v in vars(namespace).items() if v is not None
+    })
+
+    log.debug(
+        "Exit: parse_args(parser={!r}, args{!r}, partial={!r}) -> {!r}".format(
+            parser, args, partial, opts
+        )
+    )
+    return opts
 
 
 def read_config(name=None, update=None):
@@ -305,7 +343,8 @@ def logging_from_config(config, update=None):
 
 def main():
     """Entry point of the *becmd* program."""
-    opts = mapping_expand(parse_args(sys.argv[1:]))
+    parser = get_argparser()
+    opts = parse_args(parser, sys.argv[1:], partial=True)
     try:
         cfg = read_config(opts.get('config'), update={PROG_NAME: opts})
     except becmd.errors.ValidationError:
