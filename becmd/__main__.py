@@ -261,6 +261,38 @@ def cache_from_config(host, clear=False):
     ))
 
 
+def endpoint_from_config(config, host):
+    """Generate a Beyond Security beSECURE endpoint for given host out of the
+    provided configuration
+
+
+    :param config: A dictionary with the configuration passed to ``becmd``.
+    :type config: python:dict
+
+    :param host: A dictionary with the host configuration.
+    :type host: python:dict
+
+
+    :returns: A Beyond Security beSECURE API endpoint URL generator.
+    :rtype: ~becmd.api.Endpoint
+
+    """
+    log.debug("Enter: endpoint_from_config(config={!r}, host={!r})".format(
+        config, host
+    ))
+
+    api = config.get('api', {}).copy()
+    params = api.pop('params', {})
+    endpoint = becmd.api.Endpoint(host, **api, **params)
+
+    log.debug(
+        "Exit: endpoint_from_config(config={!r}, host={!r}) -> {!r}".format(
+            config, host, endpoint
+        )
+    )
+    return endpoint
+
+
 def host_from_config(config, name=None, update=None):
     """Build a host configuration data structure from given configuration.
 
@@ -384,6 +416,7 @@ def main():
 
     becmd.api.argparser_from_interface(parser, interface)
     opts = parse_args(parser, sys.argv[1:], partial=False)
+    endpoint = endpoint_from_config(opts, host)
 
 
 if __name__ == '__main__':
