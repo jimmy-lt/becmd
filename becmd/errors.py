@@ -24,5 +24,9 @@ class BaseError(Exception):
     """Base class for all exception raised by ``becmd``."""
 
 
+class NetworkError(ConnectionError, BaseError):
+    """Error raised when a network communication error happens."""
+
+
 class ValidationError(BaseError):
     """Error raised when a becmd data structure could not be validated."""
