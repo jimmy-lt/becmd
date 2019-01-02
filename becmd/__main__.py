@@ -27,6 +27,7 @@ import argparse
 
 from xdg import BaseDirectory
 
+import becmd.api
 import becmd.net
 import becmd.errors
 
@@ -369,6 +370,20 @@ def main():
         sys.exit(1)
 
     cache_from_config(host, opts.get('refresh'))
+    try:
+        interface = becmd.net.get(
+            becmd.api.InterfaceEndpoint(host),
+            timeout=host['timeout'],
+            insecure=host['insecure_tls']
+        )
+    except becmd.errors.NetworkError:
+        log.error("Could not fetch JSON API interface for host: {}".format(
+            host['host']
+        ))
+        sys.exit(1)
+
+    becmd.api.argparser_from_interface(parser, interface)
+    opts = parse_args(parser, sys.argv[1:], partial=False)
 
 
 if __name__ == '__main__':
