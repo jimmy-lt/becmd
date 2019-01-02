@@ -27,6 +27,10 @@ import requests_cache.core
 log = logging.getLogger(__name__)
 
 
+#: Default amount of time is seconds to wait when emitting a network request.
+DEFAULT_REQUEST_TIMEOUT = 15.0
+
+
 def cache_setup(name, clear=False):
     """Setup caching for all requests made by the ``requests`` package.
 

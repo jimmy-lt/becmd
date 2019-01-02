@@ -21,7 +21,7 @@
 import logging
 
 import validx.exc
-from validx import Bool, Dict, Str
+from validx import Bool, Dict, Float, Str
 
 import becmd.errors
 
@@ -53,6 +53,7 @@ CommonHosts = Dict(
         'api_key': Str(nullable=False),
         'default': Str(pattern=RESERVED_KEYS_PATTERN),
         'insecure_tls': Bool(),
+        'timeout': Float(),
         'use_cache': Bool(),
         'use_https': Bool(),
     },
@@ -61,7 +62,14 @@ CommonHosts = Dict(
         'use_cache': True,
         'use_https': True,
     },
-    optional=['api_key', 'default', 'insecure_tls', 'use_cache', 'use_https'],
+    optional=[
+        'api_key',
+        'default',
+        'insecure_tls',
+        'timeout',
+        'use_cache',
+        'use_https',
+    ],
 )
 
 #: Validation schema for the common logger configuration.
@@ -102,6 +110,7 @@ Host = Dict(
         'api_key': Str(nullable=False),
         'host': Str(pattern=r'^[0-9A-Za-z\._-]+$', nullable=False),
         'insecure_tls': Bool(),
+        'timeout': Float(),
         'use_cache': Bool(),
         'use_https': Bool(),
     },

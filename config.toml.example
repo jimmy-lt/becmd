@@ -22,6 +22,9 @@
 # hosts.insecure_tls (bool)
 #     Globally disable TLS security checks for all remote hosts.
 #
+# hosts.timeout (float)
+#     Globally set maximum host connection time.
+#
 # hosts.use_cache (bool)
 #     Globally control caching for all hosts.
 #
@@ -72,6 +75,11 @@
 #     Proceed and operate even for TLS connections otherwise considered
 #     insecure.
 #
+# timeout (float)
+#     Maximum amount of time in seconds to wait for a network connection to be
+#     established with the remote host. This option accepts decimal values. For
+#     example, ``0.1`` seconds is a valid choice of timeout.
+#
 # use_cache (bool)
 #     Whether or not to cache the responses returned by the remote host.
 #
@@ -84,6 +92,7 @@
 #hosts.api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 #hosts.default = "host_a"
 #hosts.insecure_tls = false
+#hosts.timeout = 15.0
 #hosts.use_cache = true
 #hosts.use_https = true
 #logging.datefmt = "%Y-%m-%d %H:%M:%S"
@@ -95,6 +104,7 @@
 #api_key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 #host = "AA.BB.CC.DD"
 #insecure_tls = false
+#timeout = 15.0
 #use_cache = true
 #use_https = true
 #

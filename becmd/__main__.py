@@ -98,6 +98,13 @@ def get_argparser():
                         default=False,
                         help="set metadata as expired before running the command")
 
+    parser.add_argument('-W', '--wait',
+                        type=float,
+                        default=becmd.net.DEFAULT_REQUEST_TIMEOUT,
+                        dest='hosts.timeout',
+                        metavar='TIMEOUT',
+                        help="maximum time in seconds that you allow becmd to connect with remote host")
+
     parser.add_argument('-X', '--no-cache',
                         action='store_false',
                         dest='hosts.use_cache',
