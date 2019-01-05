@@ -35,7 +35,6 @@ from becmd import __version__
 from becmd.utils import mapping_expand, mapping_update
 from becmd.schema import (
     CONFIG_RESERVED_KEYS,
-    HOST_CONFIG_KEYS,
     LOGGING_LEVELS,
     CommonLogging,
     Config,
@@ -101,13 +100,13 @@ def get_argparser():
 
     parser.add_argument('-W', '--wait',
                         type=float,
-                        default=becmd.net.DEFAULT_REQUEST_TIMEOUT,
                         dest='hosts.timeout',
                         metavar='TIMEOUT',
                         help="maximum time in seconds that you allow becmd to connect with remote host")
 
     parser.add_argument('-X', '--no-cache',
                         action='store_false',
+                        default=None,
                         dest='hosts.use_cache',
                         help="disable caching of the responses from the remote host")
 
@@ -118,13 +117,13 @@ def get_argparser():
     # Only long options to disable security options.
     parser.add_argument('--no-https',
                         action='store_false',
-                        default=True,
+                        default=None,
                         dest='hosts.use_https',
                         help="disable usage of HTTPS to communicate with remote host")
 
     parser.add_argument('--insecure-tls',
                         action='store_true',
-                        default=False,
+                        default=None,
                         dest='hosts.insecure_tls',
                         help="proceed even for TLS connections considered insecure")
 
@@ -322,7 +321,7 @@ def host_from_config(config, name=None, update=None):
     name = name or common.get('default', '')
 
     # Setup host configuration.
-    host = {k: v for k, v in common.items() if k in HOST_CONFIG_KEYS}
+    host = common.copy()
     host.update(config.get('hosts', {}).get(name, {}))
     if update is not None:
         host.update(update)

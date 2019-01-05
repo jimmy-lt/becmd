@@ -23,6 +23,7 @@ import logging
 import validx.exc
 from validx import Bool, Dict, Float, Str
 
+import becmd.net
 import becmd.errors
 
 
@@ -32,8 +33,6 @@ log = logging.getLogger(__name__)
 #: Set of reserved configuration keys.
 CONFIG_RESERVED_KEYS = {'becmd', 'hosts', 'logging'}
 
-#: Host configuration keys.
-HOST_CONFIG_KEYS = {'api_key', 'host', 'use_cache'}
 #: Logging configuration keys.
 LOGGING_CONFIG_KEYS = {'datefmt', 'format', 'level', 'style'}
 
@@ -47,30 +46,43 @@ LOGGING_STYLES = {'%', '{', '$'}
 RESERVED_KEYS_PATTERN = r'^(?:(?!{}).+)$'.format(r'|'.join(CONFIG_RESERVED_KEYS))
 
 
-#: Validation schema for the common hosts configuration.
-CommonHosts = Dict(
+#: Validation schema for a host configuration.
+Host = Dict(
     {
         'api_key': Str(nullable=False),
-        'default': Str(pattern=RESERVED_KEYS_PATTERN),
+        'host': Str(pattern=r'^[0-9A-Za-z\._-]+$', nullable=False),
         'insecure_tls': Bool(),
         'timeout': Float(),
         'use_cache': Bool(),
         'use_https': Bool(),
     },
-    defaults={
-        'insecure_tls': False,
-        'use_cache': True,
-        'use_https': True,
-    },
-    optional=[
-        'api_key',
-        'default',
-        'insecure_tls',
-        'timeout',
-        'use_cache',
-        'use_https',
-    ],
+    dispose=['default', ],
 )
+
+#: Host configuration keys.
+HOST_CONFIG_KEYS = set(Host.schema)
+
+#: Host validator where the command line arguments are optional.
+OptionalHost = Host.clone()
+OptionalHost.dispose = []
+OptionalHost.optional = list(HOST_CONFIG_KEYS)
+
+#: Validation schema for the common hosts configuration.
+CommonHost = OptionalHost.clone(
+    update={
+        '/schema': {'default': Str(pattern=RESERVED_KEYS_PATTERN)},
+    },
+    unset={
+        '/': ['host', ],
+    }
+)
+CommonHost.defaults = {
+    'insecure_tls': False,
+    'timeout': becmd.net.DEFAULT_REQUEST_TIMEOUT,
+    'use_cache': True,
+    'use_https': True,
+}
+CommonHost.optional += ['default', ]
 
 #: Validation schema for the common logger configuration.
 CommonLogging = Dict(
@@ -93,44 +105,20 @@ CommonLogging = Dict(
 Common = Dict(
     {
         'config': Str(nullable=False),
-        'hosts': CommonHosts,
+        'hosts': CommonHost,
         'logging': CommonLogging,
         'refresh': Bool(),
     },
     defaults={
-        'hosts': CommonHosts({}),
+        'hosts': CommonHost({}),
         'logging': CommonLogging({}),
     },
     optional=['config', 'hosts', 'logging', 'refresh'],
 )
 
-#: Validation schema for a host configuration.
-Host = Dict(
-    {
-        'api_key': Str(nullable=False),
-        'host': Str(pattern=r'^[0-9A-Za-z\._-]+$', nullable=False),
-        'insecure_tls': Bool(),
-        'timeout': Float(),
-        'use_cache': Bool(),
-        'use_https': Bool(),
-    },
-    defaults={
-        'insecure_tls': False,
-        'use_cache': True,
-        'use_https': True,
-    },
-    dispose=['default', ],
-)
-
-
-#: Host validator where the command line arguments are optional.
-HostOpt = Host.clone()
-HostOpt.optional = ['api_key', 'host']
-
-
 #: Validation schema for a set of host configurations.
 ConfigHost = Dict(
-    extra=(Str(pattern=RESERVED_KEYS_PATTERN, nullable=False), HostOpt)
+    extra=(Str(pattern=RESERVED_KEYS_PATTERN, nullable=False), OptionalHost)
 )
 
 #: Validation schema for a becmd configuration.
