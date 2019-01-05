@@ -31,10 +31,7 @@ log = logging.getLogger(__name__)
 
 
 #: Set of reserved configuration keys.
-CONFIG_RESERVED_KEYS = {'becmd', 'hosts', 'logging'}
-
-#: Logging configuration keys.
-LOGGING_CONFIG_KEYS = {'datefmt', 'format', 'level', 'style'}
+CONFIG_RESERVED_KEYS = {'becmd', 'hosts', 'logging', 'refresh'}
 
 #: List of logging levels.
 LOGGING_LEVELS = {'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'}
@@ -100,6 +97,9 @@ CommonLogging = Dict(
     },
     optional=['datefmt', 'format', 'level', 'style'],
 )
+
+#: Logging configuration keys.
+LOGGING_CONFIG_KEYS = set(CommonLogging.schema)
 
 #: Validation schema for the common configuration statements.
 Common = Dict(
