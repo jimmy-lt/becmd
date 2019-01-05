@@ -95,7 +95,6 @@ def get_argparser():
 
     parser.add_argument('-R', '--refresh',
                         action='store_true',
-                        default=False,
                         help="set metadata as expired before running the command")
 
     parser.add_argument('-W', '--wait',
