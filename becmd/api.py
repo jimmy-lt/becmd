@@ -18,10 +18,15 @@
 # You should have received a copy of the MIT License along with becmd.
 # If not, see <http://opensource.org/licenses/MIT>.
 #
+import zlib
+import base64
 import urllib.parse
 
 from operator import itemgetter
+from contextlib import suppress
 from collections.abc import MutableMapping
+
+import becmd.net
 
 
 #: List of interface keys to ignore while parsing.
@@ -198,6 +203,31 @@ class Endpoint(MutableMapping):
     def secondary(self):
         """Get the name of the secondary interface assigned to the endpoint."""
         return self._secondary
+
+
+    def fetch(self):
+        """Query the remote host and return provided data.
+
+
+        :returns: The data retrieved from the remote host.
+        :rtype: ~typing.Any
+
+        """
+        data = becmd.net.get(self,
+                             timeout=self._host['timeout'],
+                             insecure=self._host['insecure_tls'])
+        try:
+            data = data['data']
+        except KeyError:
+            try:
+                data = data['result']
+            except KeyError:
+                with suppress(KeyError):
+                    data = zlib.decompress(
+                        base64.b64decode(data['compresseddata'])
+                    )
+
+        return data
 
 
 class InterfaceEndpoint(Endpoint):

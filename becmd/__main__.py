@@ -401,11 +401,7 @@ def main():
 
     cache_from_config(host, opts.get('refresh'))
     try:
-        interface = becmd.net.get(
-            becmd.api.InterfaceEndpoint(host),
-            timeout=host['timeout'],
-            insecure=host['insecure_tls']
-        )
+        interface = becmd.api.InterfaceEndpoint(host).fetch()
     except becmd.errors.NetworkError:
         log.error("Could not fetch JSON API interface for host: {}".format(
             host['host']
